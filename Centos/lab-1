@@ -1,0 +1,136 @@
+#!/bin/bash
+
+# Script to install OpenStack prerequisites
+
+# Prompt for en33 and en34 IPs
+read -p "Enter the IP address for en33 (e.g., 192.168.0.120): " EN33_IP
+read -p "Enter the netmask for en33 (e.g., 255.255.255.0): " EN33_NETMASK
+read -p "Enter the gateway for en33 (e.g., 192.168.0.1): " EN33_GATEWAY
+
+read -p "Enter the IP address for en34 (e.g., 10.10.100.121): " EN34_IP
+read -p "Enter the netmask for en34 (e.g., 255.255.255.0): " EN34_NETMASK
+read -p "Enter the gateway for en34 (e.g., 10.10.100.1): " EN34_GATEWAY
+
+# Prompt for DNS
+read -p "Enter the DNS server IP for DNS1: " DNS1_IP
+read -p "Enter the DNS server IP for DNS2: " DNS2_IP
+
+# Step 1: Install NTP (chrony) service
+sudo yum install chrony vim -y
+
+# Step 2: Enable and Start the Chrony Service
+sudo systemctl enable chronyd.service
+sudo systemctl restart chronyd.service
+
+# Step 3: Enable the OpenStack Repository
+sudo yum install centos-release-openstack-rocky
+
+# Step 4: Upgrade all packages
+sudo yum upgrade -y
+
+# Step 5: Install the OpenStack client Packages
+sudo yum -y update
+sudo yum install python-openstackclient -y
+
+# Step 6: Install the SELinux Package
+sudo yum install openstack-selinux -y
+
+# Step 7: Disable SELinux
+sudo sed -i 's/enforcing/disabled/g' /etc/selinux/config
+sudo setenforce 0
+sudo sestatus
+
+# Step 8: Stop and Disable the Firewall Service
+sudo systemctl stop firewalld.service
+sudo systemctl disable firewalld.service
+
+# Step 9: Stop and Disable the Network Manager
+sudo systemctl stop NetworkManager.service
+sudo systemctl disable NetworkManager.service
+
+# Step 10: Edit the hosts entry file
+sudo bash -c "echo '$EN33_IP		rocky.thecloudenabled.com	rocky' >> /etc/hosts"
+
+# Step 11: Edit the Hostname of the Machine
+sudo bash -c "echo 'rocky' > /etc/hostname"
+
+# Step 12: Set the Hostname
+sudo hostnamectl set-hostname rocky
+
+# Step 13: Verify the FQDN
+sudo hostname --fqdn
+
+# Step 14: Make the DNS Entry
+sudo bash -c "echo 'nameserver $DNS1_IP' > /etc/resolv.conf"
+
+# Step 15: Edit the Interfaces file for ens33
+sudo bash -c "cat > /etc/sysconfig/network-scripts/ifcfg-ens33 <<EOF
+DEVICE=ens33
+ONBOOT=yes
+NETBOOT=yes
+IPV6INIT=no
+BOOTPROTO=none
+NAME=ens33
+DEVICETYPE=ovs
+TYPE=OVSPort
+OVS_BRIDGE=br-ex
+EOF"
+
+# Step 15 (Continued): Edit the Interfaces file for br-ex
+sudo bash -c "cat > /etc/sysconfig/network-scripts/ifcfg-br-ex <<EOF
+DEVICE=br-ex
+ONBOOT=yes
+DEVICETYPE=ovs
+TYPE=OVSIntPort
+OVS_BRIDGE=br-ex
+IPADDR=$EN33_IP
+NETMASK=$EN33_NETMASK
+GATEWAY=$EN33_GATEWAY
+DNS1=$DNS1_IP
+DNS2=$DNS2_IP
+EOF"
+
+# Step 15 (Continued): Edit the Interfaces file for ens34
+sudo bash -c "cat > /etc/sysconfig/network-scripts/ifcfg-ens34 <<EOF
+TYPE=Ethernet
+BOOTPROTO=static
+DEFROUTE=yes
+PEERDNS=yes
+PEERROUTES=yes
+IPADDR=$EN34_IP
+NETMASK=$EN34_NETMASK
+GATEWAY=$EN34_GATEWAY
+IPV6INIT=yes
+NAME=ens34
+DEVICE=ens34
+ONBOOT=yes
+EOF"
+
+# Step 16: Tell the kernel we'll be using IPs not defined in the interfaces file
+sudo bash -c 'echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf'
+sudo bash -c 'echo "net.ipv4.conf.all.rp_filter=0" >> /etc/sysctl.conf'
+sudo bash -c 'echo "net.ipv4.conf.default.rp_filter=0" >> /etc/sysctl.conf'
+sudo sysctl -p
+
+# Step 17: Install the OpenvSwitch Package, Enable and Start the OpenvSwitch Service
+sudo yum install openstack-neutron-openvswitch -y
+sudo systemctl enable openvswitch.service
+sudo systemctl start openvswitch.service
+
+# Step 18: Create a Bridge
+sudo ovs-vsctl add-br br-ex
+
+# Step 19: Add the Interface ens33 to br-ex port
+sudo ovs-vsctl add-port br-ex ens33
+
+echo "OpenStack prerequisites installation completed."
+
+# Step 20: Restart the System
+echo "The system will restart in 5 seconds..."
+sleep 5
+sudo init 6
+
+# Step 21: Verify Internet Connectivity
+ping 8.8.8.8
+
+
