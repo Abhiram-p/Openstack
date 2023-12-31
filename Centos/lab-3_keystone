@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Script to install and configure Keystone for OpenStack
+# Automatic detection of IP addresses
+KEYSTONE_IP=$(ip -o -4 addr show dev ens33 | awk '{split($4, a, "/"); print a[1]}')
+MYSQL_IP=$(ip route | awk '/default/ {print $3}')
+MEMCACHED_IP=$(ip -o -4 addr show dev ens34 | awk '{split($4, a, "/"); print a[1]}')
 
-# Prompt for Keystone IP address and other information
-read -p "Enter the IP address for Keystone: " KEYSTONE_IP
-read -p "Enter the MySQL IP address: " MYSQL_IP
+# Prompt for MySQL Keystone user password
 read -p "Enter the MySQL Keystone user password: " MYSQL_KEYSTONE_PASSWORD
-read -p "Enter the Memcached IP address: " MEMCACHED_IP
 
 # Step 1: Install Memcached and Keystone packages
 sudo yum install openstack-keystone httpd mod_wsgi -y
