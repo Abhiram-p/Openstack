@@ -1,16 +1,16 @@
 #!/bin/bash
 
-# Prompt user for network configuration details for br-ex
-read -p "Enter IP address for br-ex: " br_ex_ip
-read -p "Enter netmask for br-ex: " br_ex_netmask
-read -p "Enter network for br-ex: " br_ex_network
-read -p "Enter broadcast for br-ex: " br_ex_broadcast
-read -p "Enter gateway for br-ex: " br_ex_gateway
-read -p "Enter DNS nameservers for br-ex (comma-separated): " br_ex_dns
+# Automatic detection of network configuration details for br-ex
+br_ex_ip=$(ip -o -4 addr show dev eth0 | awk '{split($4, a, "/"); print a[1]}')
+br_ex_netmask=$(ip -o -4 addr show dev eth0 | awk '{split($4, a, "/"); print a[2]}')
+br_ex_network=$(ip route | awk '/default/ {print $3}')
+br_ex_broadcast=$(ip -o -4 addr show dev eth0 | awk '{split($6, a, "/"); print a[1]}')
+br_ex_gateway=$(ip route | awk '/default/ {print $3}')
+br_ex_dns=$(systemd-resolve --status | grep 'DNS Servers' | awk '{print $3}' | paste -sd "," -)
 
-# Prompt user for network configuration details for eth0
-read -p "Enter IP address for eth0: " eth0_ip
-read -p "Enter netmask for eth0: " eth0_netmask
+# Automatic detection of network configuration details for eth0
+eth0_ip=$(ip -o -4 addr show dev eth0 | awk '{split($4, a, "/"); print a[1]}')
+eth0_netmask=$(ip -o -4 addr show dev eth0 | awk '{split($4, a, "/"); print a[2]}')
 
 # Check if script is run as root
 if [ "$EUID" -ne 0 ]; then
