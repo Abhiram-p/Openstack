@@ -58,7 +58,7 @@ sudo hostnamectl set-hostname rocky
 sudo hostname --fqdn
 
 # Step 14: Make the DNS Entry
-sudo bash -c "echo 'nameserver $DNS1_IP' > /etc/resolv.conf"
+sudo bash -c "echo 'nameserver 8.8.8.8' > /etc/resolv.conf"
 
 # Step 15: Edit the Interfaces file for ens33
 sudo bash -c "cat > /etc/sysconfig/network-scripts/ifcfg-ens33 <<EOF
