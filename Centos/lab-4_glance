@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Prompt for IP addresses
-read -p "Enter the Glance IP address: " GLANCE_IP
-read -p "Enter the MySQL IP address: " MYSQL_IP
-read -p "Enter the Memcached IP address: " MEMCACHED_IP
-read -p "Enter the Keystone IP address: " KEYSTONE_IP
+# Automatic detection of IP addresses
+GLANCE_IP=$(ip -o -4 addr show dev ens33 | awk '{split($4, a, "/"); print a[1]}')
+MYSQL_IP=$(ip route | awk '/default/ {print $3}')
+MEMCACHED_IP=$(ip -o -4 addr show dev ens34 | awk '{split($4, a, "/"); print a[1]}')
+KEYSTONE_IP=$(ip -o -4 addr show dev ens35 | awk '{split($4, a, "/"); print a[1]}')
 
 # Prompt for passwords
 read -sp "Enter the MySQL root password: " MYSQL_ROOT_PASSWORD
