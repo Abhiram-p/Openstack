@@ -1,19 +1,16 @@
 #!/bin/bash
 
-# Script to install OpenStack prerequisites
+# Automatic detection of network configuration details for ens33
+EN33_IP=$(ip -o -4 addr show dev ens33 | awk '{split($4, a, "/"); print a[1]}')
+EN33_NETMASK=$(ip -o -4 addr show dev ens33 | awk '{split($4, a, "/"); print a[2]}')
+EN33_GATEWAY=$(ip route | awk '/default/ {print $3}')
+DNS1_IP=$(systemd-resolve --status | grep 'DNS Servers' | awk '{print $3}' | sed -n '1p')
+DNS2_IP=$(systemd-resolve --status | grep 'DNS Servers' | awk '{print $3}' | sed -n '2p')
 
-# Prompt for en33 and en34 IPs
-read -p "Enter the IP address for en33 (e.g., 192.168.0.120): " EN33_IP
-read -p "Enter the netmask for en33 (e.g., 255.255.255.0): " EN33_NETMASK
-read -p "Enter the gateway for en33 (e.g., 192.168.0.1): " EN33_GATEWAY
-
-read -p "Enter the IP address for en34 (e.g., 10.10.100.121): " EN34_IP
-read -p "Enter the netmask for en34 (e.g., 255.255.255.0): " EN34_NETMASK
-read -p "Enter the gateway for en34 (e.g., 10.10.100.1): " EN34_GATEWAY
-
-# Prompt for DNS
-read -p "Enter the DNS server IP for DNS1: " DNS1_IP
-read -p "Enter the DNS server IP for DNS2: " DNS2_IP
+# Automatic detection of network configuration details for ens34
+EN34_IP=$(ip -o -4 addr show dev ens34 | awk '{split($4, a, "/"); print a[1]}')
+EN34_NETMASK=$(ip -o -4 addr show dev ens34 | awk '{split($4, a, "/"); print a[2]}')
+EN34_GATEWAY=$(ip route | awk '/default/ {print $3}')
 
 # Step 1: Install NTP (chrony) service
 sudo yum install chrony vim -y
