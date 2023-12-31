@@ -17,7 +17,7 @@ echo "server 192.168.0.120 iburst" >> /etc/chrony.conf
 systemctl restart chronyd.service
 
 # Step 3: Enable the OpenStack Repository
-yum install centos-release-openstack-rocky
+yum install centos-release-openstack-rocky -y
 
 # Step 4: Upgrade all the packages
 yum upgrade -y
